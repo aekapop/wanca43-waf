@@ -1,0 +1,64 @@
+---
+version: '2.4'
+
+services:
+
+  owaspwaf:
+    image: owasp/modsecurity-crs:nginx-alpine
+    restart: always    
+    ports:
+      - '8080:80'
+    networks:
+      - dvwa-net
+    environment:
+      SERVERNAME: modsec2-apache
+      BACKEND: http://dvwa_web
+      PORT: "80"
+      TZ: "Asia/Bangkok"
+      ERRORLOG: "/var/log/error.log"
+      ACCESSLOG: "/var/log/access.log"
+      MODSEC_AUDIT_LOG_FORMAT: Native
+      MODSEC_AUDIT_LOG_TYPE: Serial
+      MODSEC_AUDIT_LOG: "/var/log/modsec_audit.log"
+      MODSEC_RESP_BODY_ACCESS: "On"
+      MODSEC_RESP_BODY_MIMETYPE: "text/plain text/html text/xml application/json"
+
+  dvwa_web:
+    image: cytopia/dvwa:php-8.1
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    networks:
+      - dvwa-net
+    environment:
+      - RECAPTCHA_PRIV_KEY=
+      - RECAPTCHA_PUB_KEY=
+      - SECURITY_LEVEL=low
+      - PHPIDS_ENABLED=0
+      - PHPIDS_VERBOSE=0
+      - PHP_DISPLAY_ERRORS=1
+      - MYSQL_HOSTNAME=dvwa_db
+      - MYSQL_DATABASE=dvwa
+      - MYSQL_USERNAME=dvwa
+      - MYSQL_PASSWORD=p@ssw0rd
+
+  dvwa_db:
+    image: mariadb:10.1
+    hostname: dvwa_db
+    volumes:
+      - dvwa_db_data:/var/lib/mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpass
+      MYSQL_DATABASE: dvwa
+      MYSQL_USER: dvwa
+      MYSQL_PASSWORD: p@ssw0rd
+    restart: unless-stopped
+    networks:
+      - dvwa-net
+
+networks:
+  dvwa-net:
+    driver: bridge
+
+volumes:
+  dvwa_db_data:
